@@ -1,8 +1,8 @@
 package main
 
 import (
-	_ "github.com/codyprime/mqtt-att/interfaces"
-	"github.com/codyprime/mqtt-att/mqttatt"
+	_ "github.com/codyprime/skeeter/internal/pkg/interfaces"
+	"github.com/codyprime/skeeter/internal/pkg/skeeter"
 	"flag"
 	"fmt"
 	"net"
@@ -18,5 +18,5 @@ func main() {
 	ip := net.ParseIP(*ipStr)
 
 	fmt.Println(ip)
-	mqttatt.ModTest(*device)
+	skeeter.ModTest(*device)
 }
