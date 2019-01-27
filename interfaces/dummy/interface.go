@@ -1,4 +1,4 @@
-package tplink
+package dummy
 
 import (
 	"fmt"
@@ -12,9 +12,9 @@ type Device struct {
 var myDev *Device = &Device{}
 
 func init() {
-	mqttatt.Register("tplink", myDev)
+	mqttatt.Register("dummy", myDev)
 }
 
 func (d *Device) ModuleTest() {
-	fmt.Println("tplink ModuleTest")
+	fmt.Println("dummy ModuleTest")
 }
