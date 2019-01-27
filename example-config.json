@@ -1,0 +1,14 @@
+{
+    "Modules": [
+        {
+            "tplink": [
+                { "ip": "192.168.15.176",
+                  "id": "b0:be:76:a9:ee:0d",
+                  "type": "switch",
+                  "sub_suffixes": [ { "suffix": "state/"}, {"suffix": "brightness/" } ]
+                }
+            ]
+        }
+    ]
+}
+
