@@ -1,7 +1,8 @@
 {
-    "Modules": [
+    "modules": [
         {
-            "tplink": [
+            "class": "tplink",
+            "device": [
                 { "ip": "192.168.15.176",
                   "id": "b0:be:76:a9:ee:0d",
                   "type": "switch",

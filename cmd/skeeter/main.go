@@ -1,22 +1,71 @@
 package main
 
 import (
-	_ "github.com/codyprime/skeeter/internal/pkg/interfaces"
-	"github.com/codyprime/skeeter/internal/pkg/skeeter"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"net"
+	_ "github.com/codyprime/skeeter/internal/pkg/interfaces"
+	"github.com/codyprime/skeeter/internal/pkg/skeeter"
+	"io/ioutil"
+	//"net"
+	"os"
+	"os/user"
+	"path/filepath"
+	//"bytes"
 )
+
+type Module struct {
+	Class   string           `json:"class"`
+	Devices []skeeter.Device `json:"device"`
+}
+
+type Config struct {
+	Modules []Module `json:"modules"`
+}
+
+var conf Config
 
 func main() {
 
-	ipStr := flag.String("ip", "127.0.0.1", "ip address of device")
-	device := flag.String("device", "dummy", "device type to wrap")
+	username, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+
+	homedir := username.HomeDir
+
+	defaultPrefsFile := filepath.Join(homedir, ".skeeter.json")
+
+	config := flag.String("config", defaultPrefsFile, "configuration file")
 
 	flag.Parse()
 
-	ip := net.ParseIP(*ipStr)
+	configFile, err := os.Open(*config)
+	if err != nil {
+		fmt.Println(err)
+		return
+	} else {
+		defer configFile.Close()
+	}
 
-	fmt.Println(ip)
-	skeeter.ModTest(*device)
+	prefs, err := ioutil.ReadAll(configFile)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = json.Unmarshal([]byte(prefs), &conf)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, mod := range conf.Modules {
+		modName := mod.Class
+		fmt.Printf("Adding device to '%s'\n", modName)
+		for _, dev := range mod.Devices {
+			skeeter.ModuleAddDevice(modName, &dev)
+		}
+		skeeter.ModTest(modName)
+	}
 }
