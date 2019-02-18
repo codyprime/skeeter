@@ -28,6 +28,7 @@ type SubPub struct {
 
 type Device struct {
 	IP   string   `json:"ip"`
+	Port string   `json:"port"`
 	ID   string   `json:"id"`
 	Type string   `json:"type"`
 	Subs []SubPub `json:"sub_suffixes"`
@@ -37,7 +38,7 @@ type Device struct {
 type Module interface {
 	ModuleTest()
 	// Add a device to monitor
-	AddDevice(ip string, id string, devType string)
+	AddDevice(ip string, port string, id string, devType string)
 
 	MessageRx(topic string, payload string) // handler for subscribed topics
 }
@@ -89,7 +90,6 @@ func RegisterModule(name string, module Module) (err error) {
 // Add a device to a module
 //
 // The passed name must match a name of an existing module
-//
 func ModuleAddDevice(name string, dev *Device) (err error) {
 	devlist, ok := devInfo[name]
 	if !ok {
@@ -104,7 +104,7 @@ func ModuleAddDevice(name string, dev *Device) (err error) {
 	}
 
 	devlist.devices[name] = dev
-	devlist.module.AddDevice(dev.IP, dev.ID, dev.Type)
+	devlist.module.AddDevice(dev.IP, dev.Port, dev.ID, dev.Type)
 	fmt.Println(devlist)
 	return nil
 }

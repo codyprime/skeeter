@@ -68,4 +68,6 @@ func main() {
 		}
 		skeeter.ModTest(modName)
 	}
+
+	for {}
 }
