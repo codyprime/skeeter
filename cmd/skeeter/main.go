@@ -11,7 +11,9 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"syscall"
+	"time"
 )
 
 type Module struct {
@@ -71,7 +73,7 @@ func main() {
 
 	mqttOpts := skeeter.MQTTOpts{
 		Server:   *mqttServer,
-		Clientid: "skeeter",
+		Clientid: "skeeter-"+strconv.FormatInt(time.Now().Unix(),16),
 		Qos:      byte(*mqttQos),
 		Retained: *mqttRetained,
 		Username: *mqttUsername,
