@@ -2,8 +2,9 @@ package tplink
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/binary"
+	"encoding/json"
+	"fmt"
 )
 
 type PrefState struct {
@@ -68,6 +69,11 @@ const (
 	CMD_BRIGHTNESS Cmds = 2
 )
 
+type MsgSend struct {
+	Cmd  Cmds
+	Data []byte
+}
+
 type MsgResp struct {
 	Cmd  Cmds
 	Len  uint32
@@ -76,7 +82,16 @@ type MsgResp struct {
 
 const RX_MAX_LEN = 4096
 
+//========================================================================
+// Simple XOR encode
 // See: https://github.com/softScheck/tplink-smartplug/blob/master/tplink_smartplug.py
+//
+// ---------------------------------------------------------------
+// | uint32	  | length of message
+// ---------------------------------------------------------------
+// | []byte   | json command; first byte xor'ed with 0xAB.
+// |          | each subsequent byte xor'ed with the previous
+// ---------------------------------------------------------------
 func kasaEncode(msg []byte) (enc []byte) {
 	var encBuffer bytes.Buffer
 	//enc = make([]byte, len(msg)+4)
@@ -91,6 +106,8 @@ func kasaEncode(msg []byte) (enc []byte) {
 	return encBuffer.Bytes()
 }
 
+//========================================================================
+// Simple XOR decode
 func kasaDecode(enc []byte) (msg []byte) {
 	msg = make([]byte, len(enc))
 
@@ -102,22 +119,36 @@ func kasaDecode(enc []byte) (msg []byte) {
 	return msg
 }
 
-func (c *Cmds) Marshal() (encCmd []byte, err error) {
+const DIMMER_CMD = "{\"smartlife.iot.dimmer\":"
+
+//========================================================================
+// For a given message cmd, select the correct json-message and encode it.
+func (c *Cmds) Marshal(data []byte) (encCmd []byte, err error) {
 	var encMsg []byte
+	var msg []byte
 
 	switch *c {
 	case CMD_INFO:
 		getInfo := SystemMsgGetInfo{}
-		infoMsg, err := json.Marshal(getInfo)
+		msg, err = json.Marshal(getInfo)
 		if err != nil {
 			panic(err)
 		}
-		encMsg = kasaEncode(infoMsg)
+	case CMD_RELAY:
+		msg = []byte(fmt.Sprintf("{\"system\": {\"set_relay_state\": {\"state\": %s}}}",
+			string(data)))
+	case CMD_BRIGHTNESS:
+		msg = []byte(fmt.Sprintf("%s {\"set_brightness\": {\"brightness\": %s}}}",
+			DIMMER_CMD, string(data)))
 	}
 
+	fmt.Printf("Sending: %s\n", msg)
+	encMsg = kasaEncode(msg)
 	return encMsg, nil
 }
 
+//========================================================================
+// Decode the response
 func (c *Cmds) Unmarshal(msg []byte) (value interface{}, err error) {
 
 	switch *c {

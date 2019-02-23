@@ -2,7 +2,7 @@ package skeeter
 
 import (
 	"fmt"
-	//	"net"
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 //---------------------------------------------------------
@@ -22,25 +22,28 @@ import (
 //		skeeter/tplink/switch-b0:be:76:a9:ee:0d/state
 //		skeeter/tplink/switch-b0:be:76:a9:ee:0d/brightness
 //
-type SubPub struct {
-	Suffix string `json:"suffix"`
-}
 
 type Device struct {
 	IP   string   `json:"ip"`
 	Port string   `json:"port"`
 	ID   string   `json:"id"`
 	Type string   `json:"type"`
-	Subs []SubPub `json:"sub_suffixes"`
-	Pubs []SubPub `json:"sub_suffixes"`
+	Subs []string `json:"sub-suffixes"`
+	Pubs []string `json:"pub-suffixes"`
 }
 
 type Module interface {
 	ModuleTest()
 	// Add a device to monitor
-	AddDevice(ip string, port string, id string, devType string)
+	AddDevice(device Device, mqtt *MQTTOpts, topics []string)
 
 	MessageRx(topic string, payload string) // handler for subscribed topics
+
+	MQTTHandler(MQTT.Client, MQTT.Message)
+}
+
+type Skeeter struct {
+	MQTT *MQTTOpts
 }
 
 type deviceInfo struct {
@@ -60,7 +63,7 @@ func init() {
 //  -- bandwidth usage
 //  -- market data (https://github.com/timpalpant/go-iex)
 
-//----------------------------------------------------------------------------
+//========================================================================
 // Register a module.
 //
 // This is expected to be called in a module's init() function.
@@ -86,11 +89,11 @@ func RegisterModule(name string, module Module) (err error) {
 	return nil
 }
 
-//----------------------------------------------------------------------------
+//========================================================================
 // Add a device to a module
 //
 // The passed name must match a name of an existing module
-func ModuleAddDevice(name string, dev *Device) (err error) {
+func (s *Skeeter) ModuleAddDevice(name string, dev *Device) (err error) {
 	devlist, ok := devInfo[name]
 	if !ok {
 		err = fmt.Errorf("Module %s has not been registered", name)
@@ -103,8 +106,16 @@ func ModuleAddDevice(name string, dev *Device) (err error) {
 		return err
 	}
 
-	devlist.devices[name] = dev
-	devlist.module.AddDevice(dev.IP, dev.Port, dev.ID, dev.Type)
+	fmt.Printf("dev.Subs: \n")
+	fmt.Println(dev.Subs)
+	subTopics := make([]string, len(dev.Subs))
+	for i, topic := range dev.Subs {
+		subTopics[i] = name+"/"+dev.Type+"/"+dev.ID+"/"+topic
+		s.MQTT.AddSubscription(subTopics[i], devlist.module.MQTTHandler)
+	}
+	devlist.devices[dev.ID] = dev
+	devlist.module.AddDevice(*dev, s.MQTT, subTopics)
+
 	fmt.Println(devlist)
 	return nil
 }

@@ -7,11 +7,11 @@ import (
 	_ "github.com/codyprime/skeeter/internal/pkg/interfaces"
 	"github.com/codyprime/skeeter/internal/pkg/skeeter"
 	"io/ioutil"
-	//"net"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
-	//"bytes"
+	"syscall"
 )
 
 type Module struct {
@@ -26,6 +26,8 @@ type Config struct {
 var conf Config
 
 func main() {
+	ex := make(chan os.Signal, 1)
+	signal.Notify(ex, os.Interrupt, syscall.SIGTERM)
 
 	username, err := user.Current()
 	if err != nil {
@@ -37,6 +39,11 @@ func main() {
 	defaultPrefsFile := filepath.Join(homedir, ".skeeter.json")
 
 	config := flag.String("config", defaultPrefsFile, "configuration file")
+	mqttQos := flag.Int("qos", 2, "MQTT QoS value")
+	mqttServer := flag.String("server", "tcp://192.168.15.2:1883", "MQTT broker")
+	mqttRetained := flag.Bool("retained", true, "MQTT broker retains last message")
+	mqttUsername := flag.String("username", "", "MQTT broker username")
+	mqttPassword := flag.String("password", "", "MQTT broker password")
 
 	flag.Parse()
 
@@ -54,20 +61,34 @@ func main() {
 		return
 	}
 
+	fmt.Println(string(prefs))
 	err = json.Unmarshal([]byte(prefs), &conf)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	fmt.Println(conf)
 
+	mqttOpts := skeeter.MQTTOpts{
+		Server:   *mqttServer,
+		Clientid: "skeeter",
+		Qos:      byte(*mqttQos),
+		Retained: *mqttRetained,
+		Username: *mqttUsername,
+		Password: *mqttPassword,
+	}
+
+	mqttOpts.Init()
+
+	skeet := skeeter.Skeeter{MQTT: &mqttOpts}
 	for _, mod := range conf.Modules {
 		modName := mod.Class
 		fmt.Printf("Adding device to '%s'\n", modName)
 		for _, dev := range mod.Devices {
-			skeeter.ModuleAddDevice(modName, &dev)
+			skeet.ModuleAddDevice(modName, &dev)
 		}
 		skeeter.ModTest(modName)
 	}
 
-	for {}
+	<-ex
 }
