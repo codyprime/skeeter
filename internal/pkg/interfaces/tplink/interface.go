@@ -42,9 +42,6 @@ func (m *Module) AddDevice(device skeeter.Device, mqtt *skeeter.MQTTOpts,
 	go kasa.KasaComm()
 }
 
-func (m *Module) MessageRx(topic string, payload string) {
-}
-
 func (m *Module) MQTTHandler(client MQTT.Client, msg MQTT.Message) {
 	log.Debugf("TPLink-MQTT rx: %s: %s\n", msg.Topic(), msg.Payload())
 

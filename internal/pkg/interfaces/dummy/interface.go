@@ -26,9 +26,6 @@ func (m *Module) AddDevice(device skeeter.Device, mqtt *skeeter.MQTTOpts, topics
 	fmt.Printf("Will monitor %s, id %d, %s\n", device.IP, device.ID, device.Type)
 }
 
-func (m *Module) MessageRx(topic string, payload string) {
-}
-
 func (m *Module) MQTTHandler(client MQTT.Client, msg MQTT.Message) {
 	fmt.Printf("Dummy-MQTT rx: %s: %s\n", msg.Topic(), msg.Payload)
 }

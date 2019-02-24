@@ -39,8 +39,6 @@ type Module interface {
 	// Add a device to monitor
 	AddDevice(device Device, mqtt *MQTTOpts, topics []string)
 
-	MessageRx(topic string, payload string) // handler for subscribed topics
-
 	MQTTHandler(MQTT.Client, MQTT.Message)
 }
 
