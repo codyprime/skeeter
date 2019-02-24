@@ -91,22 +91,22 @@ func (k *KasaDevice) kasaPoll() {
 func (k *KasaDevice) KasaTxRx(txData []byte) (rxLen uint32, rxData []byte, err error) {
 	_, err = k.Conn.Write(txData)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("KasaTxRx Write error: '%s'\n", err)
 		return 0, nil, err
 	}
 	err = binary.Read(k.Conn, binary.BigEndian, &rxLen)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("KasaTxRx Read rxLen error: '%s'\n", err)
 		return 0, nil, err
 	}
 	if rxLen > RX_MAX_LEN {
-		log.Warnf("Response size %d is too large\n", rxLen)
+		log.Warnf("KasaTxRx: Response size %d is too large\n", rxLen)
 		return 0, nil, err
 	}
 	rxData = make([]byte, rxLen)
 	_, err = io.ReadFull(k.Conn, rxData[:rxLen])
 	if err != nil {
-		log.Error(err)
+		log.Errorf("KasaTxRx ReadFull error: '%s'\n", err)
 		rxData = nil // hint for the gc
 		return 0, nil, err
 	}
@@ -128,6 +128,7 @@ func (k *KasaDevice) KasaComm() (err error) {
 	for {
 		k.Conn, err = net.Dial("tcp", k.Device.IP+":"+k.Device.Port)
 		if err != nil {
+			log.Errorf("KasaTxRx: Unable to connect, Dial failed: '%s'\n", err)
 			return err
 		}
 

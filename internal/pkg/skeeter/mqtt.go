@@ -81,5 +81,9 @@ func (m *MQTTOpts) AddSubscription(topic string, handler MQTT.MessageHandler) {
 //========================================================================
 func (m *MQTTOpts) Publish(topic string, payload string) {
 	log.Debugf("publish: %s (%s)\n", topic, payload)
-	m.Client.Publish(topic, m.Qos, m.Retained, payload)
+	token := m.Client.Publish(topic, m.Qos, m.Retained, payload)
+	token.Wait()
+	if token.Error() != nil {
+	    log.Errorf("MQTT Publish failed: '%s'\n", token.Error())
+	}
 }
