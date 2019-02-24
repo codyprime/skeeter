@@ -60,6 +60,8 @@ func (k *KasaDevice) kasaPoll() {
 
 			log.Infof("relay state: %d, brightness: %d    (msg %d)\n", relay, brightness, i)
 
+			// TODO: Break out topic generation into common function
+			//       Will do that once there is a different config file layout
 			if relay != k.State.relay {
 				k.State.relay = relay
 				topic := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[0]
@@ -74,7 +76,7 @@ func (k *KasaDevice) kasaPoll() {
 				k.MQTT.Publish(topic, payload)
 			}
 		} else {
-			log.Error("Not OK :(")
+			log.Error("Kasa Comms Not OK :(")
 			break
 		}
 		// TODO: Make this configurable per device
@@ -158,6 +160,8 @@ func (k *KasaDevice) KasaComm() (err error) {
 		}
 		pollExit := <-k.p
 		k.Conn.Close()
+
+		// Under normal error, retry establishing connection
 		if pollExit != 0xff {
 			break
 		}
