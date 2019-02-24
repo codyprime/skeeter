@@ -20,8 +20,8 @@ import (
 //      Subs: [ "suffix": "state", "suffix": "brightness" ]
 //
 //  These topics will be sent to the module to handle:
-//		skeeter/tplink/switch-b0:be:76:a9:ee:0d/state
-//		skeeter/tplink/switch-b0:be:76:a9:ee:0d/brightness
+//		skeeter/tplink/switch/b0:be:76:a9:ee:0d/state
+//		skeeter/tplink/switch/b0:be:76:a9:ee:0d/brightness
 //
 
 type Device struct {
