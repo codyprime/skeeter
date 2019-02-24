@@ -106,10 +106,14 @@ func (s *Skeeter) ModuleAddDevice(name string, dev *Device) (err error) {
 	subTopics := make([]string, len(dev.Subs))
 	for i, topic := range dev.Subs {
 		subTopics[i] = name + "/" + dev.Type + "/" + dev.ID + "/" + topic
-		s.MQTT.AddSubscription(subTopics[i], devlist.module.MQTTHandler)
 	}
 	devlist.devices[dev.ID] = dev
 	devlist.module.AddDevice(*dev, s.MQTT, subTopics)
+	// Do AddSubscription after module.AddDevice to avoid race conditions
+	// from spawned MQTT goroutine
+	for _, topic := range subTopics {
+		s.MQTT.AddSubscription(topic, devlist.module.MQTTHandler)
+	}
 	return nil
 }
 
