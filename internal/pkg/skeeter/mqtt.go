@@ -2,8 +2,8 @@ package skeeter
 
 import (
 	"crypto/tls"
-	log "github.com/sirupsen/logrus"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	log "github.com/sirupsen/logrus"
 )
 
 type MQTTOpts struct {
@@ -22,8 +22,8 @@ func msgReceived(client MQTT.Client, msg MQTT.Message) {
 }
 
 func (m *MQTTOpts) ConnectionLost(client MQTT.Client, err error) {
-    log.Warnf("Connection Lost!\n")
-    log.Warn(err)
+	log.Warnf("Connection Lost!\n")
+	log.Warn(err)
 }
 
 //========================================================================
