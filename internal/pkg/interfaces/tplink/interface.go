@@ -69,6 +69,6 @@ func (m *Module) MQTTHandler(client MQTT.Client, msg MQTT.Message) {
 			cmd = CMD_BRIGHTNESS
 		}
 		kasaMsg := MsgSend{Cmd: cmd, Data: msg.Payload()}
-		kasa.SendCmd(kasaMsg)
+		kasa.QueueCmd(kasaMsg)
 	}
 }

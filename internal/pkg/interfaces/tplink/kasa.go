@@ -26,10 +26,9 @@ type KasaDevice struct {
 	State  *KasaState
 	c      chan MsgSend
 	r      chan MsgResp
-	p      chan byte
 }
 
-func (k *KasaDevice) SendCmd(cmd MsgSend) (msgResp MsgResp) {
+func (k *KasaDevice) QueueCmd(cmd MsgSend) (msgResp MsgResp) {
 	k.c <- cmd
 	msgResp = <-k.r
 	return msgResp
@@ -49,7 +48,7 @@ func (k *KasaDevice) kasaPoll() {
 		k.State.brightness = -1
 	}
 	for {
-		mResp := k.SendCmd(cmdInfo)
+		mResp := k.QueueCmd(cmdInfo)
 
 		i++
 		resp, _ := mResp.Cmd.Unmarshal(mResp.Data[:])
@@ -82,8 +81,6 @@ func (k *KasaDevice) kasaPoll() {
 		// TODO: Make this configurable per device
 		time.Sleep(time.Duration(k.Device.PollMs) * time.Millisecond)
 	}
-
-	k.p <- 0xff
 }
 
 //========================================================================
@@ -114,58 +111,58 @@ func (k *KasaDevice) KasaTxRx(txData []byte) (rxLen uint32, rxData []byte, err e
 }
 
 //========================================================================
+// CmdSend:
+func (k *KasaDevice) CmdSend(cmd MsgSend) (resp MsgResp, err error) {
+	encMsg, err := cmd.Cmd.Marshal(cmd.Data)
+	if err != nil {
+		resp.Cmd = CMD_ERR
+		return resp, err
+	}
+
+	log.Debugf("Opening connection to %s:%s", k.Device.IP, k.Device.Port)
+	k.Conn, err = net.Dial("tcp", k.Device.IP+":"+k.Device.Port)
+	if err != nil {
+		resp.Cmd = CMD_ERR
+		return resp, err
+	}
+
+	log.Debugf("Sending encrypted infoMsg:\n%s\n", hex.Dump(encMsg))
+	log.Debug(string(kasaDecode(encMsg[4:])))
+	rxLen, encData, err := k.KasaTxRx(encMsg[:])
+	k.Conn.Close()
+	if err != nil {
+		resp.Cmd = CMD_ERR
+		return resp, err
+	}
+
+	resp.Cmd = cmd.Cmd
+	resp.Len = rxLen
+	resp.Data = encData[:rxLen]
+
+	return resp, nil
+}
+
+//========================================================================
 // Simple function intended to be run as a separate Goroutine.  Listens
 // for a CMD over a channel 'c', and sends a received response back
 // over 'r'.
 func (k *KasaDevice) KasaComm() (err error) {
-	var encMsg []byte
 	var msgResp MsgResp
 
 	k.c = make(chan MsgSend)
 	k.r = make(chan MsgResp)
-	k.p = make(chan byte)
+
+	// Launch another goroutine to take care of any state polling we
+	// wish to do
+	go k.kasaPoll()
 
 	for {
-		k.Conn, err = net.Dial("tcp", k.Device.IP+":"+k.Device.Port)
+		cmd := <-k.c
+		msgResp, err = k.CmdSend(cmd)
 		if err != nil {
-			log.Errorf("KasaTxRx: Unable to connect, Dial failed: '%s'\n", err)
-			return err
+			log.Errorf("k.CmdSend(cmd) error: '%'\n", err)
 		}
-
-		// Launch another goroutine to take care of any state polling we
-		// wish to do
-		go k.kasaPoll()
-
-		for {
-			cmd := <-k.c
-			encMsg, err = cmd.Cmd.Marshal(cmd.Data)
-			if err != nil {
-				msgResp.Cmd = CMD_ERR
-				k.r <- msgResp
-				continue
-			}
-			log.Debugf("Sending encrypted infoMsg:\n%s\n", hex.Dump(encMsg))
-			log.Debug(string(kasaDecode(encMsg[4:])))
-
-			rxLen, encData, err := k.KasaTxRx(encMsg[:])
-			if err != nil {
-				msgResp.Cmd = CMD_ERR
-				break
-			} else {
-				log.Debugf("Received %d bytes\n", rxLen)
-				msgResp.Cmd = cmd.Cmd
-				msgResp.Len = rxLen
-				msgResp.Data = encData[:rxLen]
-			}
-			k.r <- msgResp
-		}
-		pollExit := <-k.p
-		k.Conn.Close()
-
-		// Under normal error, retry establishing connection
-		if pollExit != 0xff {
-			break
-		}
+		k.r <- msgResp
 	}
 
 	return nil
