@@ -3,6 +3,7 @@ package skeeter
 import (
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	log "github.com/sirupsen/logrus"
 )
 
 //---------------------------------------------------------
@@ -24,12 +25,13 @@ import (
 //
 
 type Device struct {
-	IP   string   `json:"ip"`
-	Port string   `json:"port"`
-	ID   string   `json:"id"`
-	Type string   `json:"type"`
-	Subs []string `json:"sub-suffixes"`
-	Pubs []string `json:"pub-suffixes"`
+	IP     string   `json:"ip"`
+	Port   string   `json:"port"`
+	ID     string   `json:"id"`
+	Type   string   `json:"type"`
+	Subs   []string `json:"sub-suffixes"`
+	Pubs   []string `json:"pub-suffixes"`
+	PollMs int      `json:"poll-interval"`
 }
 
 type Module interface {
@@ -73,13 +75,12 @@ func init() {
 func RegisterModule(name string, module Module) (err error) {
 	if module == nil {
 		err = fmt.Errorf("Cannot register module, nil value")
-		fmt.Println(err)
 		return err
 	}
 
 	_, ok := devInfo[name]
 	if ok {
-		fmt.Printf("Module %s already registered\n", name)
+		log.Errorf("Module %s already registered\n", name)
 	} else {
 		devInfo[name] = deviceInfo{
 			module:  module,
@@ -96,27 +97,21 @@ func RegisterModule(name string, module Module) (err error) {
 func (s *Skeeter) ModuleAddDevice(name string, dev *Device) (err error) {
 	devlist, ok := devInfo[name]
 	if !ok {
-		err = fmt.Errorf("Module %s has not been registered", name)
-		fmt.Println(err)
+		err = fmt.Errorf("Module %s has not been registered, or does not exist", name)
 		return err
 	}
 	if dev == nil {
 		err = fmt.Errorf("*Device cannot be nil")
-		fmt.Println(err)
 		return err
 	}
 
-	fmt.Printf("dev.Subs: \n")
-	fmt.Println(dev.Subs)
 	subTopics := make([]string, len(dev.Subs))
 	for i, topic := range dev.Subs {
-		subTopics[i] = name+"/"+dev.Type+"/"+dev.ID+"/"+topic
+		subTopics[i] = name + "/" + dev.Type + "/" + dev.ID + "/" + topic
 		s.MQTT.AddSubscription(subTopics[i], devlist.module.MQTTHandler)
 	}
 	devlist.devices[dev.ID] = dev
 	devlist.module.AddDevice(*dev, s.MQTT, subTopics)
-
-	fmt.Println(devlist)
 	return nil
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 type Module struct {
-	value int
+	value  int
 	Device skeeter.Device
 }
 

@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	_ "github.com/codyprime/skeeter/internal/pkg/interfaces"
 	"github.com/codyprime/skeeter/internal/pkg/skeeter"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -38,58 +38,82 @@ func main() {
 
 	homedir := username.HomeDir
 
+	// Right now, the so-called "config file" is just a json file describing
+	// each device. See "example-config.json".
+	// TODO: Use a different format for configuring devices
 	defaultPrefsFile := filepath.Join(homedir, ".skeeter.json")
-
 	config := flag.String("config", defaultPrefsFile, "configuration file")
+
+	// The rest of our options concern the MQTT broker, and are not contained in
+	// any config file.
+	// TODO: Use an option config file for MQTT broker
 	mqttQos := flag.Int("qos", 2, "MQTT QoS value")
 	mqttServer := flag.String("server", "tcp://192.168.15.2:1883", "MQTT broker")
 	mqttRetained := flag.Bool("retained", true, "MQTT broker retains last message")
 	mqttUsername := flag.String("username", "", "MQTT broker username")
 	mqttPassword := flag.String("password", "", "MQTT broker password")
+	mqttLogLevel := flag.String("verbosity", "errors", "Verbosity level: debug, info, errors")
 
 	flag.Parse()
 
+	switch *mqttLogLevel {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "errors":
+		log.SetLevel(log.WarnLevel)
+	default:
+		log.SetLevel(log.WarnLevel)
+	}
+
 	configFile, err := os.Open(*config)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Error(err)
+		os.Exit(1)
 	} else {
 		defer configFile.Close()
 	}
 
 	prefs, err := ioutil.ReadAll(configFile)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Error(err)
+		os.Exit(1)
 	}
 
-	fmt.Println(string(prefs))
 	err = json.Unmarshal([]byte(prefs), &conf)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Error(err)
+		os.Exit(2)
 	}
-	fmt.Println(conf)
 
 	mqttOpts := skeeter.MQTTOpts{
 		Server:   *mqttServer,
-		Clientid: "skeeter-"+strconv.FormatInt(time.Now().Unix(),16),
+		Clientid: "skeeter-" + strconv.FormatInt(time.Now().Unix(), 16),
 		Qos:      byte(*mqttQos),
 		Retained: *mqttRetained,
 		Username: *mqttUsername,
 		Password: *mqttPassword,
 	}
 
+	// This also connects to the MQTT broker
 	mqttOpts.Init()
 
+	// Go through the device config file, and add each device
+	// to the module package.  Every module in conf.Modules needs
+	// to have a corresponding implementation under internal/pkg/interfaces
 	skeet := skeeter.Skeeter{MQTT: &mqttOpts}
 	for _, mod := range conf.Modules {
 		modName := mod.Class
-		fmt.Printf("Adding device to '%s'\n", modName)
 		for _, dev := range mod.Devices {
-			skeet.ModuleAddDevice(modName, &dev)
+			err := skeet.ModuleAddDevice(modName, &dev)
+			if err != nil {
+				log.Error(err)
+				log.Errorf("Check '%s' for errors\n", *config)
+				os.Exit(3)
+			}
 		}
-		skeeter.ModTest(modName)
+		//skeeter.ModTest(modName)
 	}
 
 	<-ex

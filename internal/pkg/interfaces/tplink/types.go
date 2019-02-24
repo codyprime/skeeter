@@ -134,6 +134,8 @@ func (c *Cmds) Marshal(data []byte) (encCmd []byte, err error) {
 		if err != nil {
 			panic(err)
 		}
+	// TODO: Should make structs and use the json marshal/unmarshal to generate
+	//       the message.
 	case CMD_RELAY:
 		msg = []byte(fmt.Sprintf("{\"system\": {\"set_relay_state\": {\"state\": %s}}}",
 			string(data)))
@@ -142,7 +144,6 @@ func (c *Cmds) Marshal(data []byte) (encCmd []byte, err error) {
 			DIMMER_CMD, string(data)))
 	}
 
-	fmt.Printf("Sending: %s\n", msg)
 	encMsg = kasaEncode(msg)
 	return encMsg, nil
 }

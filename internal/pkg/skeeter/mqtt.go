@@ -2,7 +2,7 @@ package skeeter
 
 import (
 	"crypto/tls"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -18,16 +18,18 @@ type MQTTOpts struct {
 }
 
 func msgReceived(client MQTT.Client, msg MQTT.Message) {
-	fmt.Printf("MQTT rx: %s: %s\n", msg.Topic(), msg.Payload())
+	log.Debugf("MQTT rx: %s: %s\n", msg.Topic(), msg.Payload())
 }
 
 func (m *MQTTOpts) ConnectionLost(client MQTT.Client, err error) {
-    fmt.Printf("Connection Lost!\n")
-    fmt.Println(err)
+    log.Warnf("Connection Lost!\n")
+    log.Warn(err)
 }
 
 //========================================================================
 // Initialize and connect to the MQTT server
+//
+// Username/Password and TLS are optional
 func (m *MQTTOpts) Init() {
 	m.Options = MQTT.NewClientOptions()
 	m.Options.AddBroker(m.Server)
@@ -43,7 +45,6 @@ func (m *MQTTOpts) Init() {
 		}
 	}
 
-	fmt.Println(m)
 	tlsConfig := &tls.Config{InsecureSkipVerify: true,
 		ClientAuth: tls.NoClientCert}
 	m.Options.SetTLSConfig(tlsConfig)
@@ -53,21 +54,22 @@ func (m *MQTTOpts) Init() {
 	token := m.Client.Connect()
 	token.Wait()
 	if token.Error() != nil {
-		// TODO error handling
+		// TODO error handling for retry?
 		panic(token.Error())
 	}
 }
 
 //========================================================================
-// Allow a module to subscribe to a topic
+// Allow a module to subscribe to a topic.  We should already be connected
+// to the broker before calling.
 func (m *MQTTOpts) AddSubscription(topic string, handler MQTT.MessageHandler) {
 
 	if m.Options == nil {
-		fmt.Printf("MQTT has not been initialized\n")
+		log.Errorf("MQTT has not been initialized\n")
 		return
 	}
 
-	fmt.Printf("Adding subscription for %s\n", topic)
+	log.Infof("Adding subscription for %s\n", topic)
 	token := m.Client.Subscribe(topic, m.Qos, handler)
 	token.Wait()
 	if token.Error() != nil {
@@ -76,7 +78,8 @@ func (m *MQTTOpts) AddSubscription(topic string, handler MQTT.MessageHandler) {
 	}
 }
 
+//========================================================================
 func (m *MQTTOpts) Publish(topic string, payload string) {
-	fmt.Printf("publish: %s (%s)\n", topic, payload)
+	log.Debugf("publish: %s (%s)\n", topic, payload)
 	m.Client.Publish(topic, m.Qos, m.Retained, payload)
 }

@@ -8,19 +8,8 @@
                   "id": "b0:be:76:a9:ee:0d",
                   "type": "switch",
                   "sub-suffixes": [ "set-state",  "set-brightness" ],
-                  "pub-suffixes": [ "state",  "brightness" ]
-                }
-            ]
-        },
-        {
-            "class": "tplink",
-            "device": [
-                { "ip": "192.168.15.175",
-                  "port": "9999",
-                  "id": "b0:be:76:a9:ee:0e",
-                  "type": "switch",
-                  "sub-suffixes": [ "set-state", "set-brightness"  ],
-                  "pub-suffixes": [ "state",  "brightness" ]
+                  "pub-suffixes": [ "state",  "brightness" ],
+                  "poll-interval": 500
                 }
             ]
         }
