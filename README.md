@@ -112,3 +112,11 @@ From my `configuration.yaml` file:
     retain: true
     qos: 2
 ```
+
+## Build & Install
+
+Build:
+`go get github.com/codyprime/skeeter/cmd/skeeter`
+
+Install to `$GOPATH/bin`:
+`go install github.com/codyprime/skeeter/cmd/skeeter`
