@@ -75,8 +75,7 @@ func (k *KasaDevice) kasaPoll() {
 				k.MQTT.Publish(topic, payload)
 			}
 		} else {
-			log.Error("Kasa Comms Not OK :(")
-			break
+			log.Error("Kasa response does not match expected\n")
 		}
 		// TODO: Make this configurable per device
 		time.Sleep(time.Duration(k.Device.PollMs) * time.Millisecond)
