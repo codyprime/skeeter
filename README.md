@@ -96,3 +96,19 @@ Usage of ./skeeter:
         Verbosity level: debug, info, errors (default "errors")
 ```
 
+### Example integration with Home Assistant
+
+From my `configuration.yaml` file:
+```
+  - platform: mqtt
+    name: "Upstairs Recessed Lights"
+    state_topic: "tplink/switch/b0:be:76:a9:e0:01/state"
+    command_topic: "tplink/switch/b0:be:76:a9:e0:01/set-state"
+    brightness_state_topic: "tplink/switch/b0:be:76:a9:e0:01/brightness"
+    brightness_command_topic: "tplink/switch/b0:be:76:a9:e0:01/set-brightness"
+    brightness_scale: 100
+    payload_on: "1"
+    payload_off: "0"
+    retain: true
+    qos: 2
+```
