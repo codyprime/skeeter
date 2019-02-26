@@ -48,7 +48,7 @@ func main() {
 	// any config file.
 	// TODO: Use an option config file for MQTT broker
 	mqttQos := flag.Int("qos", 2, "MQTT QoS value")
-	mqttServer := flag.String("server", "tcp://192.168.15.2:1883", "MQTT broker")
+	mqttServer := flag.String("broker", "tcp://192.168.15.2:1883", "MQTT broker")
 	mqttRetained := flag.Bool("retained", true, "MQTT broker retains last message")
 	mqttUsername := flag.String("username", "", "MQTT broker username")
 	mqttPassword := flag.String("password", "", "MQTT broker password")
