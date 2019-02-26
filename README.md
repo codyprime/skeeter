@@ -1,12 +1,35 @@
 # Skeeter
 
-In its current form, `skeeter` is a CLI program to bridge the TPlink HS220 with MQTT.
+In its current form, `skeeter` is a CLI program to bridge the TPlink HS220
+smart dimmer with MQTT.
 
-This is very much alpha code, but I'm currently using it now to integrate my HS220 switches
-to both Home Assistant and Node-Red.
+When I first installed the HS220 in my house, it was not supported by Home
+Assistan.  Work is currently underway to change that, and I expect that sooner
+rather than later, HA will support the HS220 natively.  However, I realized
+what I wanted was for my smart devices to (as much as feasible) all be connected
+via MQTT, even if they have native support in other platforms.  That way, they
+become open to most IoT software without the need for any further libraries or
+added support (and they remain easily scripted on the command line via
+`mosquitto_sub` and `mosquitto_pub`, without interfering with other usage).
 
-The code is structured to make it (somewhat) easy to add support for other devices.  Modules
-exist under the `internal/pkgs/interface` directory.  For TP-Link:
+So to that end, I started Skeeter... named tongue-in-cheek after [Mosquitto](https://github.com/eclipse/mosquitto),
+the open source MQTT server.
+
+As it is now, the code that exists scratches my initial itch, of connecting the
+HS220 to MQTT.  I am using it to connect the HS220 to both my Home Assistant
+and Node-Red installs.
+
+When started, it will poll the HS220 at a specified interval, to read the relay
+state and brightness values.  Upon change, the new relay state and/or brightness
+is sent out as an MQTT published topic.  It also subscribes to MQTT topics, in order
+to set the relay and/or brightness values on the HS2220
+
+
+However, the goal of this project is a bit broader, and is structured to have
+the beginnings of being able to support other devices and protocols as well.
+
+Modules exist under the `internal/pkgs/interface` directory.  For
+TP-Link:
 ```
 ├── internal
 │   └── pkg
@@ -21,8 +44,8 @@ exist under the `internal/pkgs/interface` directory.  For TP-Link:
 
 ## Usage
 
-Devices are defined in a json file, for the moment.  This isn't the best format, and it
-may change in future versions.
+Devices are defined in a json file, for the moment.  This isn't the best
+format, and it may change in future versions.
 
 Example configuration, for 2 tp-link HS-220 devices:
 
@@ -47,18 +70,19 @@ Example configuration, for 2 tp-link HS-220 devices:
                   "sub-suffixes": [ "set-state",  "set-brightness" ],
                   "pub-suffixes": [ "state",  "brightness" ],
                   "poll-interval": 500
-                }                
+                }
             ]
         }
     ]
 }
 ```
 
-MQTT topics to listen/publish to are derived from class, id, type, and sub/pub suffixes.
+MQTT topics to listen/publish to are derived from class, id, type, and sub/pub
+suffixes.
 
-For the tplink hs220, right now two subscription and publish topics are supported:
-relay state, and brightness level.  The must be specified in the json file in that
-order.
+For the tplink hs220, right now two subscription and publish topics are
+supported: relay state, and brightness level.  The must be specified in the
+json file in that order.
 
 For the above example, the first skeeter will listen to the following topics:
 
@@ -95,6 +119,8 @@ Usage of ./skeeter:
   -verbosity string
         Verbosity level: debug, info, errors (default "errors")
 ```
+[Example Usage](docs/skeeter.gif)
+
 
 ### Example integration with Home Assistant
 
