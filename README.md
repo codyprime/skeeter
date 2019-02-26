@@ -119,7 +119,7 @@ Usage of ./skeeter:
   -verbosity string
         Verbosity level: debug, info, errors (default "errors")
 ```
-[Example Usage](docs/skeeter.gif)
+![Example Usage](docs/skeeter.gif?raw=true)
 
 
 ### Example integration with Home Assistant
