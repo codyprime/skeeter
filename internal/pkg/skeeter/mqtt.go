@@ -69,7 +69,7 @@ func (m *MQTTOpts) AddSubscription(topic string, handler MQTT.MessageHandler) {
 		return
 	}
 
-	log.Infof("Adding subscription for %s\n", topic)
+	log.Infof("MQTT: Adding subscription for %s\n", topic)
 	token := m.Client.Subscribe(topic, m.Qos, handler)
 	token.Wait()
 	if token.Error() != nil {
@@ -80,7 +80,7 @@ func (m *MQTTOpts) AddSubscription(topic string, handler MQTT.MessageHandler) {
 
 //========================================================================
 func (m *MQTTOpts) Publish(topic string, payload string) {
-	log.Debugf("publish: %s (%s)\n", topic, payload)
+	log.Debugf("MQTT: publish: %s (%s)\n", topic, payload)
 	token := m.Client.Publish(topic, m.Qos, m.Retained, payload)
 	token.Wait()
 	if token.Error() != nil {

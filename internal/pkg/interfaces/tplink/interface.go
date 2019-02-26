@@ -33,6 +33,9 @@ func (m *Module) AddDevice(device skeeter.Device, mqtt *skeeter.MQTTOpts,
 	if device.PollMs == 0 {
 		device.PollMs = 500
 	}
+
+	log.Infof("Polling tplink device %s every %dms\n", device.ID, device.PollMs)
+
 	kasa := KasaDevice{Device: device, MQTT: mqtt}
 
 	for _, topic := range topics {
