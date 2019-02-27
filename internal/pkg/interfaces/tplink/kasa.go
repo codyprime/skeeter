@@ -29,8 +29,11 @@ type KasaDevice struct {
 }
 
 func (k *KasaDevice) QueueCmd(cmd MsgSend) (msgResp MsgResp) {
+	log.Debugf("QueueCmd: Channel write cmd: %d\n", cmd.Cmd)
 	k.c <- cmd
+	log.Debugf("QueueCmd: Sent. Awaiting channel rx\n")
 	msgResp = <-k.r
+	log.Debugf("QueueCmd: Channel resp read\n")
 	return msgResp
 }
 
@@ -125,9 +128,10 @@ func (k *KasaDevice) CmdSend(cmd MsgSend) (resp MsgResp, err error) {
 		return resp, err
 	}
 
-	log.Debugf("Sending encrypted infoMsg:\n%s\n", hex.Dump(encMsg))
+	log.Debugf("Sending raw encoded msg:\n%s\n", hex.Dump(encMsg))
 	log.Debug(string(kasaDecode(encMsg[4:])))
 	rxLen, encData, err := k.KasaTxRx(encMsg[:])
+	log.Debugf("Received raw encoded msg:\n%s\n", hex.Dump(encData))
 	k.Conn.Close()
 	if err != nil {
 		resp.Cmd = CMD_ERR
@@ -156,11 +160,13 @@ func (k *KasaDevice) KasaComm() (err error) {
 	go k.kasaPoll()
 
 	for {
+		log.Debugf("KasaComm: read channel\n")
 		cmd := <-k.c
 		msgResp, err = k.CmdSend(cmd)
 		if err != nil {
 			log.Errorf("k.CmdSend(cmd) error: '%'\n", err)
 		}
+		log.Debugf("KasaComm: write resp channel\n")
 		k.r <- msgResp
 	}
 
