@@ -84,12 +84,6 @@ func init() {
 	devInfo = make(map[string]deviceInfo)
 }
 
-// other module ideas:
-//  -- load avg (computer stats)
-//  -- presence (arping)
-//  -- bandwidth usage
-//  -- market data (https://github.com/timpalpant/go-iex)
-
 //========================================================================
 // Register a module.
 //
