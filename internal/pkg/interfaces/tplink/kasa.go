@@ -191,7 +191,7 @@ func (k *KasaDevice) KasaComm() (err error) {
 		cmd := <-k.c
 		msgResp, err = k.CmdSend(cmd)
 		if err != nil {
-			log.Errorf("k.CmdSend(cmd) error: '%'\n", err)
+			log.Errorf("k.CmdSend(cmd) error: '%s'\n", err)
 		}
 		log.Debugf("KasaComm: write resp channel\n")
 		k.r <- msgResp
