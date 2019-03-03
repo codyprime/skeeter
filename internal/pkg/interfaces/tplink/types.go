@@ -32,6 +32,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 )
 
 type PrefState struct {
@@ -179,9 +180,10 @@ func (c *Cmds) Marshal(data []byte) (encCmd []byte, err error) {
 // Decode the response
 func (c *Cmds) Unmarshal(msg []byte) (value interface{}, err error) {
 
+	resp := kasaDecode(msg[:])
+	log.Debugf("RX: %s\n", resp)
 	switch *c {
 	case CMD_INFO:
-		resp := kasaDecode(msg[:])
 		giResp := SystemResponse{}
 		err = json.Unmarshal(resp, &giResp)
 		value = &giResp
