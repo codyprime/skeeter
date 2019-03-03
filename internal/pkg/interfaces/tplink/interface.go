@@ -110,21 +110,20 @@ func dimmerTransition(kasa *KasaDevice, endBrightness int) {
 	period := (T_TIME * 1000) / abs(int64(diff))
 	b := kasa.State.brightness
 
-	inc := 1
-	if diff < 0 {
-		inc = -1
-	}
-
 	step := 1
 	if period < MIN_PERIOD {
 		step = int(math.Round(float64(MIN_PERIOD / float64(period))))
 		period = MIN_PERIOD
 	}
 
+	if diff < 0 {
+		step *= -1
+	}
+
 	log.Debugf("dimmerTransition: sleep for %dms, step is %d\n", period, step)
-	numSteps := abs(int64(diff / step))
+	numSteps := diff / step
 	for i := numSteps; i > 0; i-- {
-		b += inc * step
+		b += step
 		msg.Data = []byte(fmt.Sprintf("%d", b))
 		kasa.QueueCmd(msg)
 		time.Sleep(time.Duration(period) * time.Millisecond)
