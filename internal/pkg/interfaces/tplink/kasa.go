@@ -35,6 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -53,6 +54,7 @@ type KasaDevice struct {
 	State  *KasaState
 	c      chan MsgSend
 	r      chan MsgResp
+	mux	   sync.Mutex
 }
 
 func (k *KasaDevice) QueueCmd(cmd MsgSend) (msgResp MsgResp) {

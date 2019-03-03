@@ -28,12 +28,22 @@
 package tplink
 
 import (
+	"fmt"
 	"github.com/codyprime/skeeter/internal/pkg/skeeter"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 )
+
+// Helper func for int abs
+func abs(n int64) int64 {
+	y := n >> 63
+	return (n ^ y) - y
+}
 
 type Module struct {
 	Conn  net.Conn
@@ -72,6 +82,59 @@ func (m *Module) AddDevice(device skeeter.Device, mqtt *skeeter.MQTTOpts,
 	go kasa.KasaComm()
 }
 
+const T_TIME = 6
+const MIN_PERIOD = 400
+
+//========================================================================
+// dimmerTransition()
+//
+// Dims the light smoothly over a transition time (T_TIME).
+// Will take the light from the current brightness to endBrightness, in
+// equal steps over T_TIME seconds.  Minimum sleep period is bounded
+// by MIN_PERIOD.
+func dimmerTransition(kasa *KasaDevice, endBrightness int) {
+	kasa.mux.Lock()
+	defer kasa.mux.Unlock()
+	msg := MsgSend{Cmd: CMD_BRIGHTNESS}
+
+	if kasa.State == nil {
+		log.Errorf("kasa.State == nil\n")
+		return
+	}
+
+	diff := endBrightness - kasa.State.brightness
+	if diff == 0 {
+		return
+	}
+
+	period := (T_TIME * 1000) / abs(int64(diff))
+	b := kasa.State.brightness
+
+	inc := 1
+	if diff < 0 {
+		inc = -1
+	}
+
+	step := 1
+	if period < MIN_PERIOD {
+		step = int(math.Round(float64(MIN_PERIOD / float64(period))))
+		period = MIN_PERIOD
+	}
+
+	log.Debugf("dimmerTransition: sleep for %dms, step is %d\n", period, step)
+	numSteps := abs(int64(diff / step))
+	for i := numSteps; i > 0; i-- {
+		b += inc * step
+		msg.Data = []byte(fmt.Sprintf("%d", b))
+		kasa.QueueCmd(msg)
+		time.Sleep(time.Duration(period) * time.Millisecond)
+	}
+	msg.Data = []byte(fmt.Sprintf("%d", endBrightness))
+	kasa.QueueCmd(msg)
+	log.Debugf("dimmerTransition: complete\n")
+	return
+}
+
 func (m *Module) MQTTHandler(client MQTT.Client, msg MQTT.Message) {
 	log.Debugf("TPLink-MQTT rx: %s: %s\n", msg.Topic(), msg.Payload())
 
@@ -97,6 +160,11 @@ func (m *Module) MQTTHandler(client MQTT.Client, msg MQTT.Message) {
 			cmd = CMD_RELAY
 		case 1:
 			cmd = CMD_BRIGHTNESS
+		case 2:
+			endBrightness, _ := strconv.Atoi(string(msg.Payload()))
+			// This will run in the background, but the operation is protected
+			// by a mutex, so multiple transition messages will not conflict
+			go dimmerTransition(kasa, endBrightness)
 		}
 		kasaMsg := MsgSend{Cmd: cmd, Data: msg.Payload()}
 		kasa.QueueCmd(kasaMsg)
