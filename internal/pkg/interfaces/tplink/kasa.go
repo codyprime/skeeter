@@ -79,6 +79,10 @@ func (k *KasaDevice) kasaPoll() {
 		k.State.relay = -1
 		k.State.brightness = -1
 	}
+	// TODO: Break out topic generation into common function Will do that
+	//       once there is a different config file layout
+	topicRelay := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[0]
+	topicBright := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[1]
 	for {
 		mResp := k.QueueCmd(cmdInfo)
 
@@ -89,22 +93,19 @@ func (k *KasaDevice) kasaPoll() {
 			relay := giResp.System.GetSysInfo.RelayState
 			brightness := giResp.System.GetSysInfo.Brightness
 
-			log.Infof("relay state: %d, brightness: %d    (msg %d)\n", relay, brightness, i)
+			log.Infof("relay state: %d, brightness: %d    (msg %d)\n",
+				relay, brightness, i)
 
-			// TODO: Break out topic generation into common function
-			//       Will do that once there is a different config file layout
 			if relay != k.State.relay {
 				k.State.relay = relay
-				topic := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[0]
 				payload := fmt.Sprintf("%d", relay)
-				k.MQTT.Publish(topic, payload)
+				k.MQTT.Publish(topicRelay, payload)
 			}
 
 			if brightness != k.State.brightness {
 				k.State.brightness = brightness
-				topic := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[1]
 				payload := fmt.Sprintf("%d", brightness)
-				k.MQTT.Publish(topic, payload)
+				k.MQTT.Publish(topicBright, payload)
 			}
 		} else {
 			log.Error("Kasa response does not match expected\n")
