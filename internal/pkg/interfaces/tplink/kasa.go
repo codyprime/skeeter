@@ -54,7 +54,7 @@ type KasaDevice struct {
 	State  *KasaState
 	c      chan MsgSend
 	r      chan MsgResp
-	mux	   sync.Mutex
+	mux    sync.Mutex
 }
 
 func (k *KasaDevice) QueueCmd(cmd MsgSend) (msgResp MsgResp) {
@@ -115,6 +115,25 @@ func (k *KasaDevice) kasaPoll() {
 }
 
 //========================================================================
+// Connect(timeoutMs)
+//
+// Does not return until a successful connection has been made.  On error,
+// sleep for timeoutMs, and then retry.
+func (k *KasaDevice) Connect(timeoutMs int) {
+	var err error
+	for {
+		log.Debugf("Opening connection to %s:%s", k.Device.IP, k.Device.Port)
+		k.Conn, err = net.Dial("tcp", k.Device.IP+":"+k.Device.Port)
+		if err == nil {
+			break
+		}
+		log.Errorf("Unable to open tcp connection to %s, retrying in %dms\n",
+			k.Device.IP, timeoutMs)
+		time.Sleep(time.Duration(timeoutMs) * time.Millisecond)
+	}
+}
+
+//========================================================================
 // Transmit and Receive messages from the TP-Link device
 func (k *KasaDevice) KasaTxRx(txData []byte) (rxLen uint32, rxData []byte, err error) {
 	_, err = k.Conn.Write(txData)
@@ -150,19 +169,17 @@ func (k *KasaDevice) CmdSend(cmd MsgSend) (resp MsgResp, err error) {
 		return resp, err
 	}
 
-	log.Debugf("Opening connection to %s:%s", k.Device.IP, k.Device.Port)
-	k.Conn, err = net.Dial("tcp", k.Device.IP+":"+k.Device.Port)
-	if err != nil {
-		resp.Cmd = CMD_ERR
-		return resp, err
-	}
-
 	log.Debugf("Sending raw encoded msg:\n%s\n", hex.Dump(encMsg))
 	log.Debug(string(kasaDecode(encMsg[4:])))
 	rxLen, encData, err := k.KasaTxRx(encMsg[:])
 	log.Debugf("Received raw encoded msg:\n%s\n", hex.Dump(encData))
-	k.Conn.Close()
 	if err != nil {
+		log.Errorf("KasaTxRx error '%s', closing connection\n", err)
+		k.Conn.Close()
+		time.Sleep(time.Duration(1000) * time.Millisecond)
+		// This will not return until a succesful connection has
+		// been established
+		k.Connect(1000)
 		resp.Cmd = CMD_ERR
 		return resp, err
 	}
@@ -184,6 +201,8 @@ func (k *KasaDevice) KasaComm() (err error) {
 	k.c = make(chan MsgSend)
 	k.r = make(chan MsgResp)
 
+	// Does not return until a succesful connection is been established.
+	k.Connect(1000)
 	// Launch another goroutine to take care of any state polling we
 	// wish to do
 	go k.kasaPoll()
