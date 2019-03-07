@@ -4,7 +4,7 @@ In its current form, `skeeter` is a CLI program to bridge the TPlink HS220
 smart dimmer with MQTT.
 
 When I first installed the HS220 in my house, it was not supported by Home
-Assistan.  Work is currently underway to change that, and I expect that sooner
+Assistant.  Work is currently underway to change that, and I expect that sooner
 rather than later, HA will support the HS220 natively.  However, I realized
 what I wanted was for my smart devices to (as much as feasible) all be connected
 via MQTT, even if they have native support in other platforms.  That way, they
