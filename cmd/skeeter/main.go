@@ -123,9 +123,6 @@ func main() {
 		Password: *mqttPassword,
 	}
 
-	// This also connects to the MQTT broker
-	mqttOpts.Init()
-
 	// Go through the device config file, and add each device
 	// to the module package.  Every module in conf.Modules needs
 	// to have a corresponding implementation under internal/pkg/interfaces
@@ -142,6 +139,9 @@ func main() {
 		}
 		//skeeter.ModTest(modName)
 	}
+
+	// This also connects to the MQTT broker
+	mqttOpts.Init()
 
 	<-ex
 }

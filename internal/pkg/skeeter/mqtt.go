@@ -33,6 +33,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type MQTTSubs struct {
+	topic   string
+	qos     byte
+	handler MQTT.MessageHandler
+}
+
 type MQTTOpts struct {
 	Server   string
 	Clientid string
@@ -42,6 +48,7 @@ type MQTTOpts struct {
 	Retained bool
 	Options  *MQTT.ClientOptions
 	Client   MQTT.Client
+	Subs     []MQTTSubs
 }
 
 func msgReceived(client MQTT.Client, msg MQTT.Message) {
@@ -49,8 +56,21 @@ func msgReceived(client MQTT.Client, msg MQTT.Message) {
 }
 
 func (m *MQTTOpts) ConnectionLost(client MQTT.Client, err error) {
-	log.Warnf("Connection Lost!\n")
+	log.Warnf("MQTT: Connection Lost!\n")
 	log.Warn(err)
+}
+
+func (m *MQTTOpts) OnConnect(client MQTT.Client) {
+	log.Warnf("MQTT: Connection Established!\n")
+	for _, sub := range m.Subs {
+		log.Infof("MQTT OnConnect: Adding subscription for %s\n", sub.topic)
+		token := m.Client.Subscribe(sub.topic, sub.qos, sub.handler)
+		token.Wait()
+		if token.Error() != nil {
+			//TODO error handling
+			panic(token.Error())
+		}
+	}
 }
 
 //========================================================================
@@ -63,6 +83,7 @@ func (m *MQTTOpts) Init() {
 	m.Options.SetClientID(m.Clientid)
 	m.Options.SetCleanSession(true)
 	m.Options.SetConnectionLostHandler(m.ConnectionLost)
+	m.Options.SetOnConnectHandler(m.OnConnect)
 	m.Options.SetAutoReconnect(true)
 
 	if m.Username != "" {
@@ -90,19 +111,8 @@ func (m *MQTTOpts) Init() {
 // Allow a module to subscribe to a topic.  We should already be connected
 // to the broker before calling.
 func (m *MQTTOpts) AddSubscription(topic string, handler MQTT.MessageHandler) {
-
-	if m.Options == nil {
-		log.Errorf("MQTT has not been initialized\n")
-		return
-	}
-
 	log.Infof("MQTT: Adding subscription for %s\n", topic)
-	token := m.Client.Subscribe(topic, m.Qos, handler)
-	token.Wait()
-	if token.Error() != nil {
-		//TODO error handling
-		panic(token.Error())
-	}
+	m.Subs = append(m.Subs, MQTTSubs{topic: topic, qos: m.Qos, handler: handler})
 }
 
 //========================================================================
@@ -111,6 +121,6 @@ func (m *MQTTOpts) Publish(topic string, payload string) {
 	token := m.Client.Publish(topic, m.Qos, m.Retained, payload)
 	token.Wait()
 	if token.Error() != nil {
-	    log.Errorf("MQTT Publish failed: '%s'\n", token.Error())
+		log.Errorf("MQTT Publish failed: '%s'\n", token.Error())
 	}
 }

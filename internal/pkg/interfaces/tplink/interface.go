@@ -83,7 +83,7 @@ func (m *Module) AddDevice(device skeeter.Device, mqtt *skeeter.MQTTOpts,
 }
 
 const T_TIME = 6
-const MIN_PERIOD = 400
+const MIN_PERIOD = 200
 
 //========================================================================
 // dimmerTransition()
