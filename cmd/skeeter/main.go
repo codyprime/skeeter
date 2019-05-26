@@ -74,9 +74,9 @@ func main() {
 	// The rest of our options concern the MQTT broker, and are not contained in
 	// any config file.
 	// TODO: Use an option config file for MQTT broker
-	mqttQos := flag.Int("qos", 2, "MQTT QoS value")
+	mqttQos := flag.Int("qos", 1, "MQTT QoS value")
 	mqttServer := flag.String("broker", "tcp://192.168.15.2:1883", "MQTT broker")
-	mqttRetained := flag.Bool("retained", true, "MQTT broker retains last message")
+	mqttRetained := flag.Bool("retained", false, "MQTT broker retains last message")
 	mqttUsername := flag.String("username", "", "MQTT broker username")
 	mqttPassword := flag.String("password", "", "MQTT broker password")
 	mqttLogLevel := flag.String("verbosity", "errors", "Verbosity level: debug, info, errors")
