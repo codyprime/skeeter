@@ -67,6 +67,15 @@ func (k *KasaDevice) QueueCmd(cmd MsgSend) (msgResp MsgResp) {
 }
 
 //========================================================================
+// Publish the current device state
+func (k *KasaDevice) publish(topicRelay string, topicBright string) {
+	payload := fmt.Sprintf("%d", k.State.relay)
+	k.MQTT.Publish(topicRelay, payload)
+	payload = fmt.Sprintf("%d", k.State.brightness)
+	k.MQTT.Publish(topicBright, payload)
+}
+
+//========================================================================
 // Send and receive responses for any periodic messages
 func (k *KasaDevice) kasaPoll() {
 	var giResp *SystemResponse
@@ -83,6 +92,15 @@ func (k *KasaDevice) kasaPoll() {
 	//       once there is a different config file layout
 	topicRelay := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[0]
 	topicBright := "tplink/" + k.Device.Type + "/" + k.Device.ID + "/" + k.Device.Pubs[1]
+
+	sendFlag := make(chan bool)
+	go func(c chan bool) {
+		for {
+			time.Sleep(time.Duration(30000) * time.Millisecond)
+			c <- true
+		}
+	}(sendFlag)
+
 	for {
 		mResp := k.QueueCmd(cmdInfo)
 
@@ -96,22 +114,27 @@ func (k *KasaDevice) kasaPoll() {
 			log.Infof("relay state: %d, brightness: %d    (msg %d)\n",
 				relay, brightness, i)
 
-			if relay != k.State.relay {
+			// Always send on message change
+			if relay != k.State.relay || brightness != k.State.brightness {
 				k.State.relay = relay
-				payload := fmt.Sprintf("%d", relay)
-				k.MQTT.Publish(topicRelay, payload)
+				k.State.brightness = brightness
+				k.publish(topicRelay, topicBright)
 			}
 
-			if brightness != k.State.brightness {
-				k.State.brightness = brightness
-				payload := fmt.Sprintf("%d", brightness)
-				k.MQTT.Publish(topicBright, payload)
-			}
 		} else {
 			log.Error("Kasa response does not match expected\n")
 		}
 		// TODO: Make this configurable per device
 		time.Sleep(time.Duration(k.Device.PollMs) * time.Millisecond)
+
+		// See if it is time to send a period message; don't block, however
+		select {
+		case send := <-sendFlag:
+			if send {
+				k.publish(topicRelay, topicBright)
+			}
+		default:
+		}
 	}
 }
 
