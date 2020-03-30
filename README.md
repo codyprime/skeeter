@@ -44,37 +44,27 @@ TP-Link:
 
 ## Usage
 
-Devices are defined in a json file, for the moment.  This isn't the best
-format, and it may change in future versions.
+Devices are defined in a yaml file.
 
-Example configuration, for 2 tp-link HS-220 devices:
+Example configuration, for a tp-link HS-220 devices:
 
-```
-{
-    "modules": [
-        {
-            "class": "tplink",
-            "device": [
-                { "ip": "192.168.1.176",
-                  "port": "9999",
-                  "id": "b0:be:76:a9:e0:0a",
-                  "type": "switch",
-                  "sub-suffixes": [ "set-state",  "set-brightness" ],
-                  "pub-suffixes": [ "state",  "brightness" ],
-                  "poll-interval": 500
-                },
-                { "ip": "192.168.1.177",
-                  "port": "9999",
-                  "id": "b0:be:76:a9:e0:0d",
-                  "type": "switch",
-                  "sub-suffixes": [ "set-state",  "set-brightness" ],
-                  "pub-suffixes": [ "state",  "brightness" ],
-                  "poll-interval": 500
-                }
-            ]
-        }
-    ]
-}
+```yaml
+---
+modules:
+    - class: "tplink"
+      device:
+          - ip: "192.168.15.176"
+            port: "9999"
+            id: "b0:be:76:a9:ee:0d"
+            type: "switch"
+            sub-suffixes:
+                - "set-state"
+                - "set-brightness"
+                - "set-brightness-smooth"
+            pub-suffixes:
+                - "state"
+                - "brightness"
+            poll-interval: 500
 ```
 
 MQTT topics to listen/publish to are derived from class, id, type, and sub/pub
@@ -82,7 +72,7 @@ suffixes.
 
 For the tplink hs220, right now two subscription and publish topics are
 supported: relay state, and brightness level.  The must be specified in the
-json file in that order.
+yaml file in that order.
 
 For the above example, the first skeeter will listen to the following topics:
 

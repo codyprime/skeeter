@@ -52,13 +52,13 @@ import (
 //
 
 type Device struct {
-	IP     string   `json:"ip"`
-	Port   string   `json:"port"`
-	ID     string   `json:"id"`
-	Type   string   `json:"type"`
-	Subs   []string `json:"sub-suffixes"`
-	Pubs   []string `json:"pub-suffixes"`
-	PollMs int      `json:"poll-interval"`
+	IP     string   `yaml:"ip"`
+	Port   string   `yaml:"port"`
+	ID     string   `yaml:"id"`
+	Type   string   `yaml:"type"`
+	Subs   []string `yaml:"sub-suffixes"`
+	Pubs   []string `yaml:"pub-suffixes"`
+	PollMs int      `yaml:"poll-interval"`
 }
 
 type Module interface {

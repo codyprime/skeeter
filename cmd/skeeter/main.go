@@ -28,11 +28,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	_ "github.com/codyprime/skeeter/internal/pkg/interfaces"
 	"github.com/codyprime/skeeter/internal/pkg/skeeter"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -44,12 +44,12 @@ import (
 )
 
 type Module struct {
-	Class   string           `json:"class"`
-	Devices []skeeter.Device `json:"device"`
+	Class   string           `yaml:"class"`
+	Devices []skeeter.Device `yaml:"device"`
 }
 
 type Config struct {
-	Modules []Module `json:"modules"`
+	Modules []Module `yaml:"modules"`
 }
 
 var conf Config
@@ -65,10 +65,7 @@ func main() {
 
 	homedir := username.HomeDir
 
-	// Right now, the so-called "config file" is just a json file describing
-	// each device. See "example-config.json".
-	// TODO: Use a different format for configuring devices
-	defaultPrefsFile := filepath.Join(homedir, ".skeeter.json")
+	defaultPrefsFile := filepath.Join(homedir, ".skeeter.yaml")
 	config := flag.String("config", defaultPrefsFile, "configuration file")
 
 	// The rest of our options concern the MQTT broker, and are not contained in
@@ -108,7 +105,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = json.Unmarshal([]byte(prefs), &conf)
+	err = yaml.Unmarshal([]byte(prefs), &conf)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)

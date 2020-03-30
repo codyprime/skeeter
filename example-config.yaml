@@ -1,0 +1,16 @@
+---
+modules:
+    - class: "tplink"
+      device:
+          - ip: "192.168.15.176"
+            port: "9999"
+            id: "b0:be:76:a9:ee:0d"
+            type: "switch"
+            sub-suffixes:
+                - "set-state"
+                - "set-brightness"
+                - "set-brightness-smooth"
+            pub-suffixes:
+                - "state"
+                - "brightness"
+            poll-interval: 500
